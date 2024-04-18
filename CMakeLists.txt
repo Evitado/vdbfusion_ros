@@ -49,8 +49,6 @@ add_service_files(FILES save_vdb_volume.srv)
 generate_messages()
 
 catkin_package(
-  INCLUDE_DIRS
-  ${CMAKE_CURRENT_SOURCE_DIR}/src
   LIBRARIES
   CATKIN_DEPENDS
   roscpp
@@ -62,7 +60,6 @@ catkin_package(
   sensor_msgs
   message_runtime)
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src)
 include(3rdparty/find_dependencies.cmake)
 add_executable(${PROJECT_NAME}_node src/VDBVolume_ros.cpp)
 target_include_directories(${PROJECT_NAME}_node PUBLIC include
