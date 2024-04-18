@@ -21,18 +21,26 @@
 // SOFTWARE.
 
 #pragma once
-
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 
-#include "Transform.hpp"
+#include <geometry_msgs/Transform.h>
+#include <geometry_msgs/TransformStamped.h>
+#include <tf2_ros/transform_listener.h>
+
+#include <Eigen/Core>
+#include "ros/node_handle.h"
 #include "vdbfusion/VDBVolume.h"
 #include "vdbfusion_ros/save_vdb_volume.h"
 
 namespace vdbfusion {
+
+using geometry_msgs::Transform;
+using geometry_msgs::TransformStamped;
+
 class VDBVolumeNode {
 public:
-    VDBVolumeNode();
+    explicit VDBVolumeNode(const ros::NodeHandle& nh);
 
 private:
     VDBVolume InitVDBVolume();
@@ -41,10 +49,26 @@ private:
                        vdbfusion_ros::save_vdb_volume::Response& response);
 
 private:
+    bool lookUpTransform(const ros::Time& timestamp,
+                         const ros::Duration& tolerance,
+                         TransformStamped& transform) {
+        return lookUpTransformTF2(parent_frame_, child_frame_, timestamp, tolerance, transform);
+    }
+
+    bool lookUpTransformTF2(const std::string& parent_frame,
+                            const std::string& child_frame,
+                            const ros::Time& timestamp,
+                            const ros::Duration& tolerance,
+                            TransformStamped& transform) {
+        if (buffer_.canTransform(parent_frame_, child_frame_, timestamp, tolerance)) {
+            transform = buffer_.lookupTransform(parent_frame_, child_frame_, timestamp, tolerance);
+            return true;
+        }
+        return false;
+    }
     ros::NodeHandle nh_;
     ros::Subscriber sub_;
     ros::ServiceServer srv_;
-    Transform tf_;
     ros::Duration timestamp_tolerance_;
 
 private:
@@ -55,7 +79,11 @@ private:
     bool apply_pose_;
     float min_range_;
     float max_range_;
+    std::string parent_frame_;
+    std::string child_frame_;
 
+    tf2_ros::Buffer buffer_;
+    tf2_ros::TransformListener tf_;
     // Triangle Mesh Extraction
     bool fill_holes_;
     float min_weight_;

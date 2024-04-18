@@ -20,4 +20,26 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vdbfusion_ros)
+# VDBFUSION
+voxel_size: 0.4
+sdf_trunc: 0.06
+space_carving: True
+
+# Triangle Mesh Generation
+fill_holes: True
+min_weight: 10.0
+
+# PointCloud
+apply_pose: True
+preprocess: True
+min_range: 0.5
+max_range: 50
+pcl_topic: "/main/ac_filtered_points"
+
+# Transform
+timestamp_tolerance_ns: 10000000
+
+# if using tf2 transforms on /tf topic
+use_tf_transforms: true
+parent_frame: "odom"
+child_frame: "main_sensor_lidar"

@@ -1,6 +1,7 @@
 # MIT License
 #
-# # Copyright (c) 2022 Saurabh Gupta, Ignacio Vizzo, Cyrill Stachniss, University of Bonn
+# # Copyright (c) 2022 Saurabh Gupta, Ignacio Vizzo, Cyrill Stachniss,
+# University of Bonn
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -30,6 +31,7 @@ include(GNUInstallDirs)
 list(APPEND CMAKE_MODULE_PATH "/usr/local/lib/cmake/OpenVDB")
 find_package(OpenVDB REQUIRED)
 find_package(VDBFusion REQUIRED)
+find_package(easy_profiler REQUIRED)
 
 find_package(
   catkin REQUIRED
@@ -47,8 +49,6 @@ add_service_files(FILES save_vdb_volume.srv)
 generate_messages()
 
 catkin_package(
-  INCLUDE_DIRS
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/vdbfusion_ros/
   LIBRARIES
   CATKIN_DEPENDS
   roscpp
@@ -60,8 +60,16 @@ catkin_package(
   sensor_msgs
   message_runtime)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/vdbfusion_ros)
-
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src)
-
 include(3rdparty/find_dependencies.cmake)
+add_executable(${PROJECT_NAME}_node src/VDBVolume_ros.cpp)
+target_include_directories(${PROJECT_NAME}_node PUBLIC include
+                                                       ${catkin_INCLUDE_DIRS})
+target_link_libraries(
+  ${PROJECT_NAME}_node PUBLIC ${catkin_LIBRARIES} VDBFusion::vdbfusion
+                              ${EIGEN3_INCLUDE_DIR} igl::core easy_profiler)
+
+install(
+  TARGETS ${PROJECT_NAME}_node
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
