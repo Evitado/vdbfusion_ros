@@ -30,6 +30,7 @@ include(GNUInstallDirs)
 list(APPEND CMAKE_MODULE_PATH "/usr/local/lib/cmake/OpenVDB")
 find_package(OpenVDB REQUIRED)
 find_package(VDBFusion REQUIRED)
+find_package(easy_profiler REQUIRED)
 
 find_package(
   catkin REQUIRED
@@ -60,8 +61,5 @@ catkin_package(
   sensor_msgs
   message_runtime)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/vdbfusion_ros)
-
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src)
-
 include(3rdparty/find_dependencies.cmake)

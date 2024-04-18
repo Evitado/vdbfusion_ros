@@ -20,24 +20,26 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-add_library(transforms STATIC Transform.cpp)
-target_link_libraries(transforms PUBLIC
-  Sophus::Sophus
-)
-target_include_directories(transforms PRIVATE
-  ${catkin_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIR}
-)
+# VDBFUSION
+voxel_size: 0.4
+sdf_trunc: 0.06
+space_carving: True
 
-add_executable(${PROJECT_NAME}_node VDBVolume_ros.cpp)
-target_link_libraries(${PROJECT_NAME}_node PUBLIC
-  ${catkin_LIBRARIES}
-  VDBFusion::vdbfusion
-  igl::core
-  transforms
-)
-target_include_directories(${PROJECT_NAME}_node PUBLIC
-  ${CMAKE_SOURCE_DIR}/include/vdbfusion_ros
-  ${catkin_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIR}
-)
+# Triangle Mesh Generation
+fill_holes: True
+min_weight: 10.0
+
+# PointCloud
+apply_pose: True
+preprocess: True
+min_range: 0.5
+max_range: 50
+pcl_topic: "/main/ac_filtered_points"
+
+# Transform
+timestamp_tolerance_ns: 10000000
+
+# if using tf2 transforms on /tf topic
+use_tf_transforms: true
+parent_frame: "odom"
+child_frame: "main_sensor_lidar"

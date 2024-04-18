@@ -20,4 +20,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vdbfusion_ros)
+add_executable(${PROJECT_NAME}_node VDBVolume_ros.cpp)
+target_link_libraries(${PROJECT_NAME}_node PUBLIC
+  ${catkin_LIBRARIES}
+  VDBFusion::vdbfusion
+  ${EIGEN3_INCLUDE_DIR}
+  igl::core
+  easy_profiler
+)

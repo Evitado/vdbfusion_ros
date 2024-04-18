@@ -22,6 +22,7 @@
 
 #include "VDBVolume_ros.hpp"
 
+#include <easy/profiler.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud.h>
@@ -34,6 +35,7 @@
 
 #include "igl/write_triangle_mesh.h"
 #include "openvdb/openvdb.h"
+#include "ros/node_handle.h"
 
 namespace {
 std::vector<Eigen::Vector3d> pcl2SensorMsgToEigen(const sensor_msgs::PointCloud2& pcl2) {
@@ -71,9 +73,11 @@ vdbfusion::VDBVolume vdbfusion::VDBVolumeNode::InitVDBVolume() {
     return vdb_volume;
 }
 
-vdbfusion::VDBVolumeNode::VDBVolumeNode() : vdb_volume_(InitVDBVolume()), tf_(nh_) {
+vdbfusion::VDBVolumeNode::VDBVolumeNode(const ros::NodeHandle& nh)
+    : nh_(nh), buffer_(ros::Duration(50, 0)), tf_(buffer_), vdb_volume_(InitVDBVolume()) {
     openvdb::initialize();
 
+    EASY_PROFILER_ENABLE;
     std::string pcl_topic;
     nh_.getParam("/pcl_topic", pcl_topic);
     nh_.getParam("/preprocess", preprocess_);
@@ -83,6 +87,11 @@ vdbfusion::VDBVolumeNode::VDBVolumeNode() : vdb_volume_(InitVDBVolume()), tf_(nh
 
     nh_.getParam("/fill_holes", fill_holes_);
     nh_.getParam("/min_weight", min_weight_);
+
+    nh_.getParam("/parent_frame", parent_frame_);
+    nh_.getParam("/child_frame", child_frame_);
+    ROS_WARN("The parent_frame and child frame are %s, %s", parent_frame_.c_str(),
+             child_frame_.c_str());
 
     int32_t tol;
     nh_.getParam("/timestamp_tolerance_ns", tol);
@@ -97,11 +106,12 @@ vdbfusion::VDBVolumeNode::VDBVolumeNode() : vdb_volume_(InitVDBVolume()), tf_(nh
 }
 
 void vdbfusion::VDBVolumeNode::Integrate(const sensor_msgs::PointCloud2& pcd) {
+    EASY_FUNCTION(profiler::colors::Cyan);
     geometry_msgs::TransformStamped transform;
     sensor_msgs::PointCloud2 pcd_out;
 
-    if (tf_.lookUpTransform(pcd.header.stamp, timestamp_tolerance_, transform)) {
-        ROS_INFO("Transform available");
+    if (lookUpTransform(pcd.header.stamp, timestamp_tolerance_, transform)) {
+        // ROS_INFO("Transform available");
         if (apply_pose_) {
             tf2::doTransform(pcd, pcd_out, transform);
         }
@@ -114,7 +124,9 @@ void vdbfusion::VDBVolumeNode::Integrate(const sensor_msgs::PointCloud2& pcd) {
         const auto& y = transform.transform.translation.y;
         const auto& z = transform.transform.translation.z;
         auto origin = Eigen::Vector3d(x, y, z);
+        EASY_BLOCK("integrating scan");
         vdb_volume_.Integrate(scan, origin, [](float /*unused*/) { return 1.0; });
+        EASY_END_BLOCK;
     }
 }
 
@@ -143,7 +155,14 @@ bool vdbfusion::VDBVolumeNode::saveVDBVolume(vdbfusion_ros::save_vdb_volume::Req
 }
 
 int main(int argc, char** argv) {
+    EASY_PROFILER_ENABLE;
+    // profiler::startListen();
     ros::init(argc, argv, "vdbfusion_rosnode");
-    vdbfusion::VDBVolumeNode vdb_volume_node;
+    ros::NodeHandle nh;
+    vdbfusion::VDBVolumeNode vdb_volume_node(nh);
     ros::spin();
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(0) << ros::Time::now().toSec();
+    const auto prof_dir = std::string(getenv("HOME")) + "/profiler/vdbfusionnode_"  + ss.str() + ".prof";
+    auto blocks_written = profiler::dumpBlocksToFile(prof_dir.c_str());
 }
